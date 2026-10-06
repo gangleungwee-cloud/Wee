@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wee클래스 나의 상담 여정 지도 (통합 최종 완성형 V5)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wee: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; color: #1e293b !important; }
+            .print-container { display: block !important; width: 100% !important; box-shadow: none !important; border: none !important; }
+            .screen-content { display: none !important; }
+            #preview-modal { display: none !important; }
+        }
+        .print-container { display: none; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 min-h-screen text-slate-800 py-6 px-4 sm:px-6">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header & School Level Selector -->
+        <header class="bg-white/90 backdrop-blur-md shadow-sm rounded-2xl p-6 border border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-4 no-print">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">🗺️ 나의 상담 여정 지도</h1>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">내 기기에 안전하게 보존되며, 초기부터 종결까지 마음의 성장을 기록합니다.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-end gap-2 w-full sm:w-auto">
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+                    <button onclick="setSchoolLevel('elem')" id="badge-elem" class="flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition bg-white text-emerald-700 shadow-sm">초등용</button>
+                    <button onclick="setSchoolLevel('middle')" id="badge-middle" class="flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition text-slate-600">중·고등용</button>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openPreviewModal()" class="flex-1 sm:flex-none text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3.5 py-2.5 rounded-xl transition shadow-sm">
+                        👁️ 종합 심리 리포트 미리보기
+                    </button>
+                    <button onclick="resetData()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium px-3 py-2.5 rounded-xl transition border border-rose-200 whitespace-nowrap">
+                        🔄 초기화
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex rounded-2xl bg-white/80 p-1.5 shadow-sm border border-emerald-100 gap-2 no-print screen-content">
+            <button onclick="switchTab('initial')" id="btn-initial" class="flex-1 py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm transition bg-emerald-600 text-white shadow-sm">
+                🌱 1단계: 초기 탐색
+            </button>
+            <button onclick="switchTab('process')" id="btn-process" class="flex-1 py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm transition text-slate-600 hover:bg-slate-100">
+                🌿 2단계: 중기 여정
+            </button>
+            <button onclick="switchTab('closure')" id="btn-closure" class="flex-1 py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm transition text-slate-600 hover:bg-slate-100">
+                🌳 3단계: 종결 평가
+            </button>
+        </nav>
+
+        <!-- Main Content Area (Screen Mode) -->
+        <main class="space-y-6 screen-content">
+
+            <!-- TAB 1: 초기 탐색 -->
+            <div id="tab-initial" class="tab-content space-y-6">
+                <section class="bg-white shadow-sm rounded-2xl p-6 sm:p-8 border border-slate-100 space-y-6">
+                    <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">1</div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">상담 초기 탐색 : 지금 내 마음과 고민은?</h2>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- 문항 1: 주된 고민 영역 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">1. 요즘 나를 가장 힘들게 하거나 신경 쓰이게 하는 고민은? (중복 선택 가능)</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2" id="q1-options-container"></div>
+                            <div class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                                <span class="text-xs font-semibold text-slate-600 shrink-0">기타 직접 입력:</span>
+                                <input type="text" id="init-q1-etc" class="w-full text-xs bg-transparent focus:outline-none" placeholder="위에 없는 고민을 적어주세요" oninput="autoSave()">
+                            </div>
+                        </div>
+
+                        <!-- 문항 2: 마음 무게 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">2. 지금 내 마음의 무게는 어느 정도인가요? (1~5단계)</label>
+                            <div class="grid grid-cols-5 gap-2 sm:gap-4">
+                                <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition">
+                                    <input type="radio" name="initSize" value="1" class="text-emerald-600 mb-1" onclick="autoSave()">
+                                    <span class="text-xs font-semibold text-slate-600">1단계</span>
+                                    <span class="text-[10px] text-slate-400">아주 가벼움</span>
+                                </label>
+                                <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition">
+                                    <input type="radio" name="initSize" value="2" class="text-emerald-600 mb-1" onclick="autoSave()">
+                                    <span class="text-xs font-semibold text-slate-600">2단계</span>
+                                    <span class="text-[10px] text-slate-400">조금 신경 쓰임</span>
+                                </label>
+                                <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition">
+                                    <input type="radio" name="initSize" value="3" class="text-emerald-600 mb-1" onclick="autoSave()">
+                                    <span class="text-xs font-semibold text-slate-600">3단계</span>
+                                    <span class="text-[10px] text-slate-400">보통</span>
+                                </label>
+                                <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition">
+                                    <input type="radio" name="initSize" value="4" class="text-emerald-600 mb-1" onclick="autoSave()">
+                                    <span class="text-xs font-semibold text-slate-600">4단계</span>
+                                    <span class="text-[10px] text-slate-400">많이 힘듦</span>
+                                </label>
+                                <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition">
+                                    <input type="radio" name="initSize" value="5" class="text-emerald-600 mb-1" onclick="autoSave()">
+                                    <span class="text-xs font-semibold text-slate-600">5단계</span>
+                                    <span class="text-[10px] text-slate-400">참기 어려울 만큼 큼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 문항 3: 신체·감정 신호 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">3. 그 고민 때문에 내 몸이나 마음에는 어떤 신호가 나타나나요? (중복 선택)</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2" id="q3-options-container"></div>
+                            <div class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                                <span class="text-xs font-semibold text-slate-600 shrink-0">기타 직접 입력:</span>
+                                <input type="text" id="init-q3-etc" class="w-full text-xs bg-transparent focus:outline-none" placeholder="다른 신호가 있다면 적어주세요" oninput="autoSave()">
+                            </div>
+                        </div>
+
+                        <!-- 문항 4: 원하는 변화와 목표 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">4. 이번 상담을 통해 이루고 싶은 변화나 목표는 무엇인가요?</label>
+                            <p class="text-[11px] text-slate-500 mb-2">💡 예시: ① 친구와 오해를 풀고 먼저 말 걸어보기, ② 속상할 때 화내지 않고 내 마음 표현하기, ③ 걱정 때문에 못 했던 숙제나 공부 조금씩 해보기</p>
+                            <textarea id="init-q4" rows="3" class="w-full rounded-xl border border-slate-200 p-3 text-xs focus:ring-2 focus:ring-emerald-400 focus:outline-none transition" placeholder="나만의 구체적인 목표를 적어보세요" oninput="autoSave()"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 1단계 하단 저장 버튼 -->
+                    <div class="pt-4 border-t border-slate-100 text-right">
+                        <button onclick="saveSectionData('1단계(초기 탐색)')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-sm transition">
+                            💾 초기 탐색 내용 저장
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 2: 중기 여정 -->
+            <div id="tab-process" class="tab-content hidden space-y-6">
+                <section class="bg-white shadow-sm rounded-2xl p-6 sm:p-8 border border-slate-100 space-y-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">2</div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900">상담 중기 여정 (일상 마음 타임라인)</h2>
+                            </div>
+                        </div>
+                        <button onclick="addLogCard()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-4 py-2 rounded-xl transition border border-emerald-200 shadow-sm">
+                            ➕ 일상 기록 카드 추가
+                        </button>
+                    </div>
+
+                    <div id="log-container" class="space-y-4">
+                        <p id="no-log-msg" class="text-xs text-slate-400 text-center py-8 border border-dashed border-slate-200 rounded-xl">작성된 일상 기록이 없습니다. 필요할 때 언제든 우측 상단 버튼을 눌러 추가하세요.</p>
+                    </div>
+
+                    <!-- 2단계 하단 저장 버튼 -->
+                    <div class="pt-4 border-t border-slate-100 text-right">
+                        <button onclick="saveSectionData('2단계(중기 여정)')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-sm transition">
+                            💾 중기 여정 내용 저장
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 3: 종결 평가 -->
+            <div id="tab-closure" class="tab-content hidden space-y-6">
+                <section class="bg-white shadow-sm rounded-2xl p-6 sm:p-8 border border-slate-100 space-y-6">
+                    <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">3</div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">상담 종결 평가 : 나의 여정 마무리하기</h2>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- 마무리 마음 무게 -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-2">1. 상담을 마무리하는 지금, 내 마음의 무게는 몇 단계인가요? (1~5단계)</label>
+                                <div class="grid grid-cols-5 gap-2 sm:gap-4">
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50 cursor-pointer transition">
+                                        <input type="radio" name="finalSize" value="1" class="text-indigo-600 mb-1" onclick="autoSave()">
+                                        <span class="text-xs font-semibold text-slate-600">1단계</span>
+                                        <span class="text-[10px] text-slate-400">아주 가벼움</span>
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50 cursor-pointer transition">
+                                        <input type="radio" name="finalSize" value="2" class="text-indigo-600 mb-1" onclick="autoSave()">
+                                        <span class="text-xs font-semibold text-slate-600">2단계</span>
+                                        <span class="text-[10px] text-slate-400">조금 신경 쓰임</span>
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50 cursor-pointer transition">
+                                        <input type="radio" name="finalSize" value="3" class="text-indigo-600 mb-1" onclick="autoSave()">
+                                        <span class="text-xs font-semibold text-slate-600">3단계</span>
+                                        <span class="text-[10px] text-slate-400">보통</span>
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50 cursor-pointer transition">
+                                        <input type="radio" name="finalSize" value="4" class="text-indigo-600 mb-1" onclick="autoSave()">
+                                        <span class="text-xs font-semibold text-slate-600">4단계</span>
+                                        <span class="text-[10px] text-slate-400">많이 힘듦</span>
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-50 cursor-pointer transition">
+                                        <input type="radio" name="finalSize" value="5" class="text-indigo-600 mb-1" onclick="autoSave()">
+                                        <span class="text-xs font-semibold text-slate-600">5단계</span>
+                                        <span class="text-[10px] text-slate-400">참기 어려울 만큼 큼</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 자신이 한 노력 -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">2. 이 여정 동안 변화를 만들기 위해 내가 스스로 해본 노력은 무엇인가요?</label>
+                                <textarea id="fin-effort" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 상담 시간에 나눈 이야기를 떠올리며 친구에게 먼저 말을 걸어보았어요." oninput="autoSave()"></textarea>
+                            </div>
+
+                            <!-- 아쉬운 점과 잘한 점 -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">3-1. 나에게 가장 칭찬해주고 싶은 점 (잘한 점)</label>
+                                    <textarea id="fin-good" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 힘들어도 포기하지 않고 상담실에 꾸준히 나온 것" oninput="autoSave()"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">3-2. 조금 아쉽거나 다음에 보완하고 싶은 점</label>
+                                    <textarea id="fin-regret" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 초반에 내 마음을 솔직하게 말하는 게 조금 어려웠던 것" oninput="autoSave()"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 상담 평가 -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">4. 이번 상담에 대한 나의 평가 (어떤 점이 좋았고 도움이 되었나요?)</label>
+                                <textarea id="fin-eval" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 내 마음을 묵묵히 들어주셔서 혼자가 아니라는 느낌을 받았어요." oninput="autoSave()"></textarea>
+                            </div>
+
+                            <!-- 상담을 통한 변화 및 심층 탐색 -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">5-1. 상담 과정에서 조금이라도 달라진 점이 있다면?</label>
+                                    <textarea id="fin-change" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 화가 날 때 심호흡을 하고 생각을 한 번 더 하게 되었어요." oninput="autoSave()"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">5-2. (변화가 있다면) 어떻게 그런 변화를 가져올 수 있었나요? / (없다면) 왜 그런 것 같나요?</label>
+                                    <textarea id="fin-change-detail" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 매번 기록하고 연습해보니 조금씩 익숙해졌어요." oninput="autoSave()"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 남은 과제 -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">6. 앞으로 내가 계속 지켜나갈 남은 과제</label>
+                                <textarea id="fin-task" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs bg-white focus:outline-none" placeholder="예: 힘들 때 속으로 삭히지 않고 주변 어른이나 친구에게 도움 요청하기" oninput="autoSave()"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 3단계 하단 저장 버튼 -->
+                        <div class="pt-4 border-t border-slate-100 text-right">
+                            <button onclick="saveSectionData('3단계(종결 평가)')" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition">
+                                💾 종결 평가 내용 저장
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- ================= 인쇄/PDF 미리보기 모달 ================= -->
+        <div id="preview-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                <!-- 모달 헤더 -->
+                <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">👁️ 종합 심리 리포트 미리보기</h3>
+                        <p class="text-xs text-slate-500">인쇄 또는 PDF로 저장되기 전 최종 레이아웃을 확인하세요.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="triggerRealPrint()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                            🖨️ 인쇄 / PDF 저장
+                        </button>
+                        <button onclick="closePreviewModal()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 모달 본문 (실제 출력될 리포트 서식) -->
+                <div class="p-6 overflow-y-auto space-y-6 bg-slate-100/50">
+                    <div class="print-preview-box bg-white p-8 rounded-xl shadow-sm border border-slate-200 space-y-6 mx-auto max-w-2xl text-slate-800">
+                        <div class="text-center border-b-2 border-slate-800 pb-4">
+                            <h1 class="text-2xl font-bold tracking-wider">🌱 나의 상담 여정 종합 리포트 🌱</h1>
+                            <p class="text-xs text-slate-500 mt-1">Wee클래스 마음 성장 기록부</p>
+                        </div>
+
+                        <!-- 📊 전후 비교 그래프 섹션 -->
+                        <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 space-y-3">
+                            <h3 class="text-xs font-bold text-emerald-900">📈 마음 무게 변화 비교 그래프 (1 ~ 5 단계)</h3>
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div class="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm">
+                                    <div class="text-[11px] text-slate-500 mb-1">상담 초기 마음 무게</div>
+                                    <div id="graph-init-val" class="text-lg font-bold text-emerald-700">-</div>
+                                    <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden">
+                                        <div id="bar-init" class="bg-emerald-500 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                                    <div class="text-[11px] text-slate-500 mb-1">상담 종결 시점 마음 무게</div>
+                                    <div id="graph-final-val" class="text-lg font-bold text-indigo-700">-</div>
+                                    <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden">
+                                        <div id="bar-final" class="bg-indigo-500 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 강조 섹션: 호소문제 및 상담 목표 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-1.5">
+                                <h3 class="text-xs font-bold text-amber-900">📌 호소 문제 (주요 고민 영역)</h3>
+                                <p id="rep-concerns" class="text-xs text-slate-700 leading-relaxed">-</p>
+                            </div>
+                            <div class="bg-sky-50/60 p-4 rounded-xl border border-sky-200 space-y-1.5">
+                                <h3 class="text-xs font-bold text-sky-900">🎯 상담 목표 (이루고 싶은 변화)</h3>
+                                <p id="rep-goal" class="text-xs text-slate-700 leading-relaxed">-</p>
+                            </div>
+                        </div>
+
+                        <!-- 강조 섹션: 현재 변화 및 심층 탐색 -->
+                        <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 space-y-3">
+                            <h3 class="text-xs font-bold text-indigo-900">✨ 상담을 통한 현재 변화 및 성장 과정 (종결 핵심)</h3>
+                            <div class="space-y-2 text-xs text-slate-700">
+                                <p><b>• 달라진 점:</b> <span id="rep-change">-</span></p>
+                                <p><b>• 변화 요인 / 심층 탐색:</b> <span id="rep-change-detail">-</span></p>
+                                <p><b>• 스스로 한 노력:</b> <span id="rep-effort">-</span></p>
+                                <p><b>• 앞으로의 과제:</b> <span id="rep-task">-</span></p>
+                            </div>
+                        </div>
+
+                        <!-- 중기 과정 타임라인 요약 -->
+                        <div class="space-y-3 pt-2">
+                            <h3 class="text-xs font-bold bg-teal-100 text-teal-900 px-3 py-1 rounded inline-block">🌿 중기 일상 마음 기록 요약</h3>
+                            <div id="rep-logs-container" class="space-y-3 pl-1">
+                                <!-- 동적 삽입 -->
+                            </div>
+                        </div>
+
+                        <div class="text-center pt-6 border-t border-slate-200 text-[11px] text-slate-400">
+                            본 리포트는 학생의 성장을 돕기 위해 Wee클래스에서 작성된 기록입니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ======================================================== -->
+
+        <!-- 프린트 전용 숨김 영역 -->
+        <div id="print-report" class="print-container"></div>
+
+    </div>
+
+    <script>
+        let currentSchoolLevel = 'elem';
+
+        const questionsData = {
+            elem: {
+                q1: [
+                    "친구와 다투었거나 놀림을 받았어요",
+                    "선생님이나 부모님께 야단을 맞아 속상해요",
+                    "학교 가기가 싫고 아침마다 배가 아파요",
+                    "공부나 숙제가 어렵고 자신감이 없어요",
+                    "내 마음을 몰라주는 것 같아 억울하고 화나요"
+                ],
+                q3: [
+                    "가슴이 두근거리고 숨이 가빠짐",
+                    "밤에 잠이 잘 오지 않고 꿈을 많이 끎",
+                    "자꾸 눈물이 나고 슬픈 생각이 듦",
+                    "배가 아프거나 머리가 지끈지끈 아픔",
+                    "모든 게 귀찮고 짜증만 남"
+                ]
+            },
+            middle: {
+                q1: [
+                    "친구 관계 갈등 및 따돌림·소외감",
+                    "학업 성적 및 진로·진학에 대한 압박과 불안",
+                    "부모님과의 대화 부족 및 가정 내 갈등",
+                    "나의 성격, 정체성 및 자존감 저하 문제",
+                    "우울감, 무기력 및 과도한 스마트폰·게임 의존"
+                ],
+                q3: [
+                    "만성적인 피로감 및 무기력",
+                    "불안감으로 인한 집중력 저하",
+                    "두통, 소화불량 등 신체화 증상",
+                    "타인과의 접촉 회피 및 고립감",
+                    "감정 기복이 심해지고 분노 조절의 어려움"
+                ]
+            }
+        };
+
+        function setSchoolLevel(level) {
+            currentSchoolLevel = level;
+            const elemBtn = document.getElementById('badge-elem');
+            const midBtn = document.getElementById('badge-middle');
+
+            if (level === 'elem') {
+                elemBtn.className = "flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition bg-white text-emerald-700 shadow-sm";
+                midBtn.className = "flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition text-slate-600";
+            } else {
+                midBtn.className = "flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition bg-white text-emerald-700 shadow-sm";
+                elemBtn.className = "flex-1 sm:flex-none text-xs px-3 py-1.5 rounded-lg font-semibold transition text-slate-600";
+            }
+            renderOptions(level);
+            autoSave();
+        }
+
+        function renderOptions(level) {
+            const data = questionsData[level];
+            
+            const q1Container = document.getElementById('q1-options-container');
+            q1Container.innerHTML = '';
+            data.q1.forEach((text) => {
+                q1Container.innerHTML += `
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-xs text-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                        <input type="checkbox" name="concerns" value="${text}" class="rounded text-emerald-600 w-4 h-4" onchange="autoSave()"> ${text}
+                    </label>
+                `;
+            });
+
+            const q3Container = document.getElementById('q3-options-container');
+            q3Container.innerHTML = '';
+            data.q3.forEach((text) => {
+                q3Container.innerHTML += `
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer bg-slate-50/50 hover:bg-emerald-50/50">
+                        <input type="checkbox" name="bodySignals" value="${text}" class="rounded text-emerald-600 w-4 h-4" onchange="autoSave()"> ${text}
+                    </label>
+                `;
+            });
+        }
+
+        function switchTab(tabName) {
+            ['initial', 'process', 'closure'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`btn-${t}`);
+                btn.className = "flex-1 py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm transition text-slate-600 hover:bg-slate-100";
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            activeBtn.className = "flex-1 py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm transition bg-emerald-600 text-white shadow-sm";
+        }
+
+        function autoSave() {
+            const data = {
+                schoolLevel: currentSchoolLevel,
+                concerns: Array.from(document.querySelectorAll('input[name="concerns"]:checked')).map(el => el.value),
+                q1Etc: document.getElementById('init-q1-etc').value,
+                initSize: document.querySelector('input[name="initSize"]:checked')?.value || '',
+                bodySignals: Array.from(document.querySelectorAll('input[name="bodySignals"]:checked')).map(el => el.value),
+                q3Etc: document.getElementById('init-q3-etc').value,
+                initQ4: document.getElementById('init-q4').value,
+                finalSize: document.querySelector('input[name="finalSize"]:checked')?.value || '',
+                finEffort: document.getElementById('fin-effort').value,
+                finGood: document.getElementById('fin-good').value,
+                finRegret: document.getElementById('fin-regret').value,
+                finEval: document.getElementById('fin-eval').value,
+                finChange: document.getElementById('fin-change').value,
+                finChangeDetail: document.getElementById('fin-change-detail').value,
+                finTask: document.getElementById('fin-task').value,
+                logs: Array.from(document.querySelectorAll('.log-item')).map(item => ({
+                    date: item.querySelector('.log-date').value,
+                    event: item.querySelector('.log-event').value,
+                    mood: item.querySelector('.log-mood').value,
+                    moodEtc: item.querySelector('.log-mood-etc').value,
+                    effort: item.querySelector('.log-effort').value,
+                    realization: item.querySelector('.log-realization').value
+                }))
+            };
+            localStorage.setItem('wee_journey_v5_data', JSON.stringify(data));
+        }
+
+        function saveSectionData(sectionName) {
+            autoSave();
+            alert(`[${sectionName}] 내용이 기기에 성공적으로 저장되었습니다!`);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setSchoolLevel('elem');
+            const saved = localStorage.getItem('wee_journey_v5_data');
+            if (!saved) return;
+            try {
+                const data = JSON.parse(saved);
+                if (data.schoolLevel) setSchoolLevel(data.schoolLevel);
+                
+                if (data.concerns) {
+                    data.concerns.forEach(val => {
+                        const chk = document.querySelector(`input[name="concerns"][value="${val}"]`);
+                        if (chk) chk.checked = true;
+                    });
+                }
+                if (data.q1Etc) document.getElementById('init-q1-etc').value = data.q1Etc;
+                if (data.initSize) {
+                    const r = document.querySelector(`input[name="initSize"][value="${data.initSize}"]`);
+                    if (r) r.checked = true;
+                }
+                if (data.bodySignals) {
+                    data.bodySignals.forEach(val => {
+                        const chk = document.querySelector(`input[name="bodySignals"][value="${val}"]`);
+                        if (chk) chk.checked = true;
+                    });
+                }
+                if (data.q3Etc) document.getElementById('init-q3-etc').value = data.q3Etc;
+                if (data.initQ4) document.getElementById('init-q4').value = data.initQ4;
+                
+                if (data.finalSize) {
+                    const r = document.querySelector(`input[name="finalSize"][value="${data.finalSize}"]`);
+                    if (r) r.checked = true;
+                }
+                if (data.finEffort) document.getElementById('fin-effort').value = data.finEffort;
+                if (data.finGood) document.getElementById('fin-good').value = data.finGood;
+                if (data.finRegret) document.getElementById('fin-regret').value = data.finRegret;
+                if (data.finEval) document.getElementById('fin-eval').value = data.finEval;
+                if (data.finChange) document.getElementById('fin-change').value = data.finChange;
+                if (data.finChangeDetail) document.getElementById('fin-change-detail').value = data.finChangeDetail;
+                if (data.finTask) document.getElementById('fin-task').value = data.finTask;
+
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(log => addLogCard(log.date, log.event, log.mood, log.moodEtc, log.effort, log.realization));
+                }
+            } catch (e) {
+                console.error('데이터 복원 실패', e);
+            }
+        });
+
+        function addLogCard(dateVal = '', eventVal = '', moodVal = '', moodEtcVal = '', effortVal = '', realizationVal = '') {
+            document.getElementById('no-log-msg').style.display = 'none';
+            const container = document.getElementById('log-container');
+            const card = document.createElement('div');
+            card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 log-item';
+            
+            const today = new Date().toISOString().split('T')[0];
+            const dVal = dateVal || today;
+
+            card.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">일상 기록</span>
+                        <input type="date" class="log-date text-xs border border-slate-200 rounded-lg p-1 bg-white" value="${dVal}" onchange="autoSave()">
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove(); autoSave(); checkEmptyLogs();" class="text-slate-400 hover:text-rose-500 text-xs font-medium">삭제</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">오늘 있었던 일</label>
+                        <input type="text" class="log-event w-full rounded-xl border border-slate-200 p-2 text-xs bg-white" placeholder="예: 모둠 활동 중 의견이 잘 안 맞았음" value="${eventVal}" oninput="autoSave()">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">오늘의 기분</label>
+                        <div class="flex gap-2">
+                            <select class="log-mood rounded-xl border border-slate-200 p-2 text-xs bg-white" onchange="autoSave()">
+                                <option value="기쁨/홀가분함" ${moodVal==='기쁨/홀가분함'?'selected':''}>기쁨/홀가분함</option>
+                                <option value="불안/걱정" ${moodVal==='불안/걱정'?'selected':''}>불안/걱정</option>
+                                <option value="화남/짜증" ${moodVal==='화남/짜증'?'selected':''}>화남/짜증</option>
+                                <option value="우울/무기력" ${moodVal==='우울/무기력'?'selected':''}>우울/무기력</option>
+                                <option value="기타" ${moodVal==='기타'?'selected':''}>기타 직접 입력</option>
+                            </select>
+                            <input type="text" class="log-mood-etc w-full rounded-xl border border-slate-200 p-2 text-xs bg-white" placeholder="기타 기분 입력" value="${moodEtcVal}" oninput="autoSave()">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">시도해 본 작은 행동</label>
+                        <input type="text" class="log-effort w-full rounded-xl border border-slate-200 p-2 text-xs bg-white" placeholder="예: 화가 날 때 심호흡 3번 하기" value="${effortVal}" oninput="autoSave()">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">새롭게 알게 된 나의 마음 (알아차림)</label>
+                        <input type="text" class="log-realization w-full rounded-xl border border-slate-200 p-2 text-xs bg-white" placeholder="예: 내가 내 생각보다 참을성이 있구나 느낌" value="${realizationVal}" oninput="autoSave()">
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        function checkEmptyLogs() {
+            if(document.querySelectorAll('.log-item').length === 0) {
+                document.getElementById('no-log-msg').style.display = 'block';
+            }
+        }
+
+        // 미리보기 모달 제어
+        function openPreviewModal() {
+            autoSave();
+            updateReportContent();
+            document.getElementById('preview-modal').classList.remove('hidden');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.add('hidden');
+        }
+
+        function updateReportContent() {
+            const sizeMap = { '1': '1단계 (아주 가벼움)', '2': '2단계 (조금 신경 쓰임)', '3': '3단계 (보통)', '4': '4단계 (많이 힘듦)', '5': '5단계 (참기 어려울 만큼 큼)' };
+
+            // 호소 문제 매핑
+            const concerns = Array.from(document.querySelectorAll('input[name="concerns"]:checked')).map(el => el.value);
+            const q1Etc = document.getElementById('init-q1-etc').value;
+            if(q1Etc) concerns.push(q1Etc);
+            document.getElementById('rep-concerns').innerText = concerns.length > 0 ? concerns.join(', ') : '작성된 내용이 없습니다.';
+
+            // 상담 목표 매핑
+            const goal = document.getElementById('init-q4').value || '작성된 내용이 없습니다.';
+            document.getElementById('rep-goal').innerText = goal;
+
+            // 마음 무게 그래프 매핑
+            const initSizeVal = document.querySelector('input[name="initSize"]:checked')?.value;
+            const finalSizeVal = document.querySelector('input[name="finalSize"]:checked')?.value;
+
+            document.getElementById('graph-init-val').innerText = initSizeVal ? sizeMap[initSizeVal] : '미측정';
+            document.getElementById('graph-final-val').innerText = finalSizeVal ? sizeMap[finalSizeVal] : '미측정';
+
+            document.getElementById('bar-init').style.width = initSizeVal ? `${(initSizeVal / 5) * 100}%` : '0%';
+            document.getElementById('bar-final').style.width = finalSizeVal ? `${(finalSizeVal / 5) * 100}%` : '0%';
+
+            // 종결 및 변화 탐색 매핑
+            document.getElementById('rep-change').innerText = document.getElementById('fin-change').value || '작성된 내용이 없습니다.';
+            document.getElementById('rep-change-detail').innerText = document.getElementById('fin-change-detail').value || '작성된 내용이 없습니다.';
+            document.getElementById('rep-effort').innerText = document.getElementById('fin-effort').value || '작성된 내용이 없습니다.';
+            document.getElementById('rep-task').innerText = document.getElementById('fin-task').value || '작성된 내용이 없습니다.';
+
+            // 중기 로그 매핑
+            const logContainer = document.getElementById('rep-logs-container');
+            logContainer.innerHTML = '';
+            const logs = document.querySelectorAll('.log-item');
+            
+            if(logs.length === 0) {
+                logContainer.innerHTML = '<p class="text-xs text-slate-400 pl-2">기록된 중기 일상 내용이 없습니다.</p>';
+            } else {
+                logs.forEach((item, index) => {
+                    const date = item.querySelector('.log-date').value;
+                    const event = item.querySelector('.log-event').value || '-';
+                    const mood = item.querySelector('.log-mood').value;
+                    const moodEtc = item.querySelector('.log-mood-etc').value;
+                    const moodStr = mood === '기타' ? moodEtc : mood;
+                    const effort = item.querySelector('.log-effort').value || '-';
+                    const realization = item.querySelector('.log-realization').value || '-';
+
+                    logContainer.innerHTML += `
+                        <div class="border border-slate-200 rounded-lg p-3 text-xs space-y-1 bg-slate-50/50">
+                            <div class="font-bold text-teal-800">회차 ${index + 1} (${date})</div>
+                            <p><b>• 있었던 일:</b> ${event} / <b>기분:</b> ${moodStr}</p>
+                            <p><b>• 시도한 행동:</b> ${effort} / <b>알아차림:</b> ${realization}</p>
+                        </div>
+                    `;
+                });
+            }
+
+            // 실제 인쇄 영역 동기화
+            document.getElementById('print-report').innerHTML = document.querySelector('.print-preview-box').outerHTML;
+        }
+
+        function triggerRealPrint() {
+            updateReportContent();
+            window.print();
+        }
+
+        function resetData() {
+            if(confirm('저장된 모든 내용을 초기화하시겠습니까?')) {
+                localStorage.removeItem('wee_journey_v5_data');
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
